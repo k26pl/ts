@@ -1,15 +1,15 @@
 import { transformFile } from "@swc/core";
-import { appendFile, stat } from "fs/promises";
+import { stat } from "fs/promises";
 export async function initialize() {}
-let initial = false;
+//let initial = false;
 
 export async function resolve(specifier, context, nextResolve) {
-  if (
-    (context.parentURL + "").includes("node_modules") ||
-    (initial && !(specifier.startsWith(".") || specifier.startsWith("/")))
-  )
-    return nextResolve(specifier);
-  initial = true;
+  //if (
+  //  (context.parentURL + "").includes("node_modules") ||
+  //  (initial && !(specifier.startsWith(".") || specifier.startsWith("/")))
+  //)
+  //  return nextResolve(specifier);
+  //initial = true;
   // Take an `import` or `require` specifier and resolve it to a URL.
   let type;
   if (specifier.endsWith(".ts")) {
