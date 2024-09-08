@@ -1,5 +1,5 @@
 import { transformFile } from "@swc/core";
-import { stat } from "fs/promises";
+import { readFile, stat } from "fs/promises";
 let logs=[];
 let log=(...msg)=>{
   logs.push(msg);
@@ -44,7 +44,15 @@ export async function resolve(specifier, context, nextResolve) {
         try{
           let s= await stat(w.join("/")+"/node_modules/"+spec)
           if(s.isDirectory()){
-            return resolve(w.join("/")+"/node_modules/"+specifier,context,nextResolve)
+            try{
+              let j=JSON.parse(await readFile(w.join("/")+"/node_modules/"+specifier+"/package.json",{encoding:"utf-8"}))
+              let main=w.join("/")+"/node_modules/"+specifier+"/"+j.main;
+              return resolve(main,context,nextResolve)
+            }catch(e){
+              //probably package/file was used
+              return resolve(w.join("/")+"/node_modules/"+specifier,context,nextResolve)
+            }
+              
           }
         }catch(e){
           w.pop();
