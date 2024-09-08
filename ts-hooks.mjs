@@ -1,9 +1,26 @@
 import { transformFile } from "@swc/core";
 import { stat } from "fs/promises";
-export async function initialize() {}
+let logs=[];
+let log=(...msg)=>{
+  logs.push(msg);
+}
+export async function initialize({port}) {
+  let s=d=>{
+    port.postMessage(JSON.parse(JSON.stringify(d)))
+  }
+  logs.forEach(s)
+  log=(...m)=>s(m);
+}
 //let initial = false;
-
+/**
+ * 
+ * @param {string} specifier 
+ * @param {*} context 
+ * @param {*} nextResolve 
+ * @returns {*}
+ */
 export async function resolve(specifier, context, nextResolve) {
+  log(specifier,context,nextResolve)
   //if (
   //  (context.parentURL + "").includes("node_modules") ||
   //  (initial && !(specifier.startsWith(".") || specifier.startsWith("/")))
@@ -15,6 +32,26 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier.endsWith(".ts")) {
     type = "ts";
   } else {
+    if(!(specifier.startsWith(".")||specifier.startsWith("/"))){
+      let u=new URL(specifier,context.parentURL).pathname
+      let w=u.split("/")
+      // remove filename
+      w.pop()
+      // we only need to find relevant node_modules
+      let spec=specifier.split("/")[0];
+      //try node_modules in all parent directories
+      while(w.length>0){
+        try{
+          let s= await stat(w.join("/")+"/node_modules/"+spec)
+          if(s.isDirectory()){
+            return resolve(w.join("/")+"/node_modules/"+specifier,context,nextResolve)
+          }
+        }catch(e){
+          w.pop();
+        }
+      }
+      log("u",w)
+    }
     // check if file with .ts added exists
     await stat(new URL(specifier, context.parentURL).toString().replace("file://", "") + ".ts")
       .then((e) => {
