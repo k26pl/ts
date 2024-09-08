@@ -46,7 +46,7 @@ export async function resolve(specifier, context, nextResolve) {
           if(s.isDirectory()){
             try{
               let j=JSON.parse(await readFile(w.join("/")+"/node_modules/"+specifier+"/package.json",{encoding:"utf-8"}))
-              let main=w.join("/")+"/node_modules/"+specifier+"/"+j.main;
+              let main=w.join("/")+"/node_modules/"+specifier+"/"+(j.main||"index.js");
               return resolve(main,context,nextResolve)
             }catch(e){
               //probably package/file was used
