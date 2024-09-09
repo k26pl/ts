@@ -50,13 +50,22 @@ export async function resolve(specifier, context, nextResolve) {
               return resolve(main,context,nextResolve)
             }catch(e){
               //probably package/file was used
-              return resolve(w.join("/")+"/node_modules/"+specifier,context,nextResolve)
+              let out= resolve(w.join("/")+"/node_modules/"+specifier,context,nextResolve);
+              try{
+                await stat(out.url.pathname);
+                return out;
+              }catch(e){
+                //not found
+                //go one node_modules deeper
+                
+              }
             }
               
           }
         }catch(e){
-          w.pop();
+          
         }
+        w.pop();
       }
       log("u",w)
     }

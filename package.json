@@ -1,6 +1,6 @@
 {
   "name": "@k26pl/ts",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Quick and minimal typescript support for node, based on swc and import hooks",
   "main": "index.js",
   "scripts": {
