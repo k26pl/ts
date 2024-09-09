@@ -5,7 +5,7 @@ const { MessageChannel } = require('node:worker_threads');
 const { port1, port2 } = new MessageChannel();
 
 port1.on('message', (msg) => {
-  console.log(...msg);
+  console.log("[@k26pl/ts]: ",...msg);
 });
 port1.unref();
 
