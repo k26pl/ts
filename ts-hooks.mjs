@@ -1,5 +1,6 @@
 import { transformFile } from "@swc/core";
-import { readFile, stat } from "fs/promises";
+import { readFile, stat, readlink } from "fs/promises";
+import * as _path from "path";
 let logs=[];
 let log=(...msg)=>{
   logs.push(msg);
@@ -20,7 +21,23 @@ export async function initialize({port}) {
  * @returns {*}
  */
 export async function resolve(specifier, context, nextResolve) {
-  log(specifier,context,nextResolve)
+  log("resolve",context.parentURL,context)
+  //workaround: disable for js files in node_modules
+  if(context.parentURL&&(context.parentURL+"").includes("node_modules")){
+    log("cxy")
+    return nextResolve(specifier,context)
+  }
+  let builtins="fs,readline,assert,buffer,child_process,cluster,crypto,dgram,dns,domain,events,http,https,net,os,path,punycode,querystring,stream,string_decoder,timers,tls,tty,url,util,v8,vm,zlib".split(",")
+  for(let bi of builtins){
+    if(specifier==bi||specifier.startsWith(bi+"/")){
+      return nextResolve(specifier)
+    }
+  }
+  if(specifier.startsWith("node:")){
+    return nextResolve(specifier)
+  }
+ 
+  log("=========",specifier,context,nextResolve)
   //if (
   //  (context.parentURL + "").includes("node_modules") ||
   //  (initial && !(specifier.startsWith(".") || specifier.startsWith("/")))
@@ -32,42 +49,19 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier.endsWith(".ts")) {
     type = "ts";
   } else {
-    if(!(specifier.startsWith(".")||specifier.startsWith("/"))){
-      let u=new URL(specifier,context.parentURL).pathname
-      let w=u.split("/")
-      // remove filename
-      w.pop()
-      // we only need to find relevant node_modules
-      let spec=specifier.split("/")[0];
-      //try node_modules in all parent directories
-      while(w.length>0){
+    if((!(specifier.startsWith(".")||specifier.startsWith("/")))){
+      if(!specifier.endsWith(".ts")){
         try{
-          let s= await stat(w.join("/")+"/node_modules/"+spec)
-          if(s.isDirectory()){
-            try{
-              let j=JSON.parse(await readFile(w.join("/")+"/node_modules/"+specifier+"/package.json",{encoding:"utf-8"}))
-              let main=w.join("/")+"/node_modules/"+specifier+"/"+(j.main||"index.js");
-              return resolve(main,context,nextResolve)
-            }catch(e){
-              //probably package/file was used
-              let out= resolve(w.join("/")+"/node_modules/"+specifier,context,nextResolve);
-              try{
-                await stat(out.url.pathname);
-                return out;
-              }catch(e){
-                //not found
-                //go one node_modules deeper
-                
-              }
-            }
-              
+          let out=resolve(specifier+".ts",context,()=>{})
+          if(out && out.url){
+            await stat(out.url.replace("file://",""));
+            return out;
           }
-        }catch(e){
-          
-        }
-        w.pop();
+        }catch(e){}
       }
-      log("u",w)
+      
+      return nextResolve(specifier);
+  
     }
     // check if file with .ts added exists
     await stat(new URL(specifier, context.parentURL).toString().replace("file://", "") + ".ts")
